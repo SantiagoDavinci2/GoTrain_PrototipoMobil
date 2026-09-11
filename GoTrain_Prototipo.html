@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GoTrain — Prototipo Interactivo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0a0a14; color: #e0e0e0; min-height: 100vh; }
+
+  /* HEADER */
+  .app-header {
+    background: #12121f; border-bottom: 2px solid #e94560;
+    padding: 16px 30px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .app-header h1 { color: #e94560; font-size: 1.6rem; letter-spacing: 2px; }
+  .app-header p { color: #777; font-size: 0.8rem; }
+  .screen-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nav-btn {
+    background: #1a1a2e; border: 1px solid #333; color: #aaa;
+    padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8rem;
+    transition: all 0.2s;
+  }
+  .nav-btn.active, .nav-btn:hover { background: #e94560; border-color: #e94560; color: white; }
+
+  /* MAIN LAYOUT */
+  .prototype-container {
+    display: flex; justify-content: center; align-items: flex-start;
+    gap: 40px; padding: 30px 20px; flex-wrap: wrap;
+  }
+
+  /* PHONE FRAME */
+  .phone-frame {
+    width: 375px; min-height: 780px;
+    background: #111;
+    border-radius: 44px;
+    border: 3px solid #333;
+    box-shadow: 0 0 60px rgba(233,69,96,0.15), inset 0 0 20px rgba(0,0,0,0.5);
+    overflow: hidden; position: relative;
+    flex-shrink: 0;
+  }
+  .phone-status {
+    background: #0a0a14; padding: 10px 20px 6px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.7rem; color: #666;
+  }
+  .phone-notch {
+    width: 120px; height: 28px; background: #111;
+    border-radius: 0 0 20px 20px; margin: 0 auto;
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  }
+  .screen { display: none; flex-direction: column; min-height: 720px; }
+  .screen.active { display: flex; }
+
+  /* SCREEN COMPONENTS */
+  .s-header {
+    background: linear-gradient(135deg, #1a1a2e, #12121f);
+    padding: 16px; border-bottom: 1px solid #2a2a4a;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .s-header h2 { font-size: 1.1rem; color: #fff; }
+  .s-header .back { color: #e94560; font-size: 1.2rem; cursor: pointer; }
+  .s-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #e94560, #c0392b); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 0.85rem; flex-shrink: 0; }
+
+  .s-content { flex: 1; overflow-y: auto; padding: 0; background: #0f0f1a; }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    background: #12121f; border-top: 1px solid #2a2a4a;
+    display: flex; justify-content: space-around; padding: 10px 0 6px;
+  }
+  .bnav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; color: #555; font-size: 0.6rem; padding: 4px 10px; border-radius: 8px; transition: all 0.2s; }
+  .bnav-item.active { color: #e94560; }
+  .bnav-item span { font-size: 1.2rem; }
+
+  /* === SCREEN 1: LOGIN === */
+  #screen-login .login-bg {
+    flex: 1; background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 24px; gap: 24px;
+  }
+  .login-logo { font-size: 3rem; color: #e94560; font-weight: 900; letter-spacing: 3px; }
+  .login-subtitle { color: #777; font-size: 0.85rem; text-align: center; }
+  .input-field {
+    width: 100%; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px;
+    padding: 14px 16px; color: #e0e0e0; font-size: 0.9rem;
+  }
+  .btn-primary {
+    width: 100%; background: #e94560; color: white; border: none; border-radius: 12px;
+    padding: 14px; font-size: 0.95rem; font-weight: bold; cursor: pointer;
+  }
+  .btn-google {
+    width: 100%; background: transparent; color: #aaa; border: 1px solid #2a2a4a; border-radius: 12px;
+    padding: 12px; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .divider { display: flex; align-items: center; gap: 10px; width: 100%; }
+  .divider hr { flex: 1; border: none; border-top: 1px solid #2a2a4a; }
+  .divider span { color: #555; font-size: 0.75rem; }
+  .login-footer { color: #555; font-size: 0.75rem; text-align: center; }
+  .login-footer a { color: #e94560; }
+
+  /* === SCREEN 2: HOME / FEED === */
+  .stories-bar { display: flex; gap: 12px; padding: 14px 14px 10px; overflow-x: auto; scrollbar-width: none; }
+  .story-item { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; flex-shrink: 0; }
+  .story-ring { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #e94560, #c0392b); padding: 2px; }
+  .story-inner { width: 100%; height: 100%; border-radius: 50%; background: #1a1a2e; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 0.85rem; }
+  .story-label { font-size: 0.6rem; color: #aaa; }
+  .my-story .story-ring { background: #2a2a4a; }
+
+  .post-card { background: #1a1a2e; margin: 0 12px 12px; border-radius: 12px; overflow: hidden; border: 1px solid #2a2a4a; }
+  .post-header { display: flex; align-items: center; gap: 10px; padding: 12px; }
+  .post-user { flex: 1; }
+  .post-user .name { font-size: 0.85rem; font-weight: bold; color: #fff; }
+  .post-user .time { font-size: 0.7rem; color: #666; }
+  .post-img { width: 100%; height: 160px; background: linear-gradient(135deg, #1a1a2e, #2a1a2e); display: flex; align-items: center; justify-content: center; font-size: 3rem; }
+  .post-text { padding: 10px 12px; font-size: 0.82rem; color: #ccc; line-height: 1.5; }
+  .post-workout-tag { margin: 0 12px 8px; background: #0f0f1a; border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; }
+  .post-workout-tag .tag-icon { color: #e94560; }
+  .post-workout-tag .tag-text { font-size: 0.78rem; color: #aaa; }
+  .post-actions { display: flex; align-items: center; gap: 16px; padding: 8px 12px 12px; border-top: 1px solid #2a2a4a; }
+  .post-action { display: flex; align-items: center; gap: 4px; font-size: 0.78rem; color: #777; cursor: pointer; }
+  .post-action.liked { color: #e94560; }
+  .post-action span { font-size: 1rem; }
+
+  /* === SCREEN 3: ENTRENAMIENTO === */
+  .workout-hero { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 20px 16px 16px; }
+  .workout-date { font-size: 0.75rem; color: #666; margin-bottom: 4px; }
+  .workout-title { font-size: 1.3rem; font-weight: bold; color: #fff; margin-bottom: 8px; }
+  .workout-stats { display: flex; gap: 16px; }
+  .w-stat { text-align: center; }
+  .w-stat-val { font-size: 1.2rem; font-weight: bold; color: #e94560; }
+  .w-stat-label { font-size: 0.65rem; color: #666; }
+  .exercise-section { padding: 14px 14px 0; }
+  .section-label { font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .exercise-item { background: #1a1a2e; border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; border: 1px solid #2a2a4a; }
+  .ex-icon { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #e94560, #c0392b); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+  .ex-info { flex: 1; }
+  .ex-name { font-size: 0.85rem; font-weight: bold; color: #fff; }
+  .ex-detail { font-size: 0.72rem; color: #666; margin-top: 2px; }
+  .ex-sets { background: #0f0f1a; border-radius: 6px; padding: 2px 8px; font-size: 0.75rem; color: #aaa; }
+  .add-ex-btn { margin: 12px 14px; background: transparent; border: 1px dashed #e94560; color: #e94560; border-radius: 10px; padding: 12px; text-align: center; font-size: 0.85rem; cursor: pointer; }
+  .start-btn { margin: 12px 14px; background: #e94560; color: white; border: none; border-radius: 12px; padding: 14px; font-size: 0.95rem; font-weight: bold; width: calc(100% - 28px); cursor: pointer; }
+
+  /* === SCREEN 4: PERFIL === */
+  .profile-cover { height: 100px; background: linear-gradient(135deg, #e94560, #c0392b, #1a1a2e); position: relative; }
+  .profile-pic { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #1a1a2e, #2a2a4a); border: 3px solid #0f0f1a; position: absolute; bottom: -36px; left: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; color: white; }
+  .profile-info { padding: 44px 16px 16px; }
+  .profile-name { font-size: 1.1rem; font-weight: bold; color: #fff; }
+  .profile-bio { font-size: 0.8rem; color: #888; margin-top: 4px; }
+  .profile-stats-row { display: flex; gap: 20px; margin-top: 14px; }
+  .pstat { text-align: center; }
+  .pstat-val { font-size: 1.2rem; font-weight: bold; color: #fff; }
+  .pstat-label { font-size: 0.65rem; color: #666; }
+  .edit-profile-btn { margin-top: 12px; border: 1px solid #e94560; color: #e94560; background: transparent; border-radius: 8px; padding: 7px 20px; font-size: 0.82rem; cursor: pointer; }
+  .badges-section { padding: 12px 14px 0; }
+  .badges-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .badge-item { background: #1a1a2e; border-radius: 10px; padding: 10px 8px; text-align: center; width: 64px; border: 1px solid #2a2a4a; }
+  .badge-icon { font-size: 1.4rem; }
+  .badge-label { font-size: 0.58rem; color: #777; margin-top: 3px; line-height: 1.2; }
+  .hist-section { padding: 12px 14px 0; }
+  .hist-item { background: #1a1a2e; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #2a2a4a; }
+  .hist-left .hist-name { font-size: 0.82rem; font-weight: bold; color: #fff; }
+  .hist-left .hist-date { font-size: 0.7rem; color: #666; margin-top: 2px; }
+  .hist-right .hist-vol { font-size: 0.82rem; font-weight: bold; color: #e94560; }
+  .hist-right .hist-dur { font-size: 0.7rem; color: #666; text-align: right; }
+
+  /* === SCREEN 5: COACH IA === */
+  .coach-header { background: linear-gradient(135deg, #1a1a2e, #12121f); padding: 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #2a2a4a; }
+  .coach-avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #e94560, #c0392b); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+  .coach-info .coach-name { font-size: 0.95rem; font-weight: bold; color: #fff; }
+  .coach-info .coach-status { font-size: 0.7rem; color: #27ae60; }
+  .chat-area { flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; background: #0f0f1a; }
+  .msg { max-width: 82%; }
+  .msg.coach { align-self: flex-start; }
+  .msg.user { align-self: flex-end; }
+  .msg-bubble { padding: 10px 14px; border-radius: 16px; font-size: 0.82rem; line-height: 1.5; }
+  .msg.coach .msg-bubble { background: #1a1a2e; color: #ccc; border-bottom-left-radius: 4px; border: 1px solid #2a2a4a; }
+  .msg.user .msg-bubble { background: #e94560; color: white; border-bottom-right-radius: 4px; }
+  .msg-time { font-size: 0.65rem; color: #555; margin-top: 3px; }
+  .msg.user .msg-time { text-align: right; }
+  .routine-card { background: #0f0f1a; border: 1px solid #e94560; border-radius: 10px; padding: 10px; margin-top: 6px; }
+  .routine-card .rc-title { font-size: 0.8rem; font-weight: bold; color: #e94560; margin-bottom: 6px; }
+  .routine-card .rc-item { font-size: 0.75rem; color: #aaa; padding: 3px 0; border-bottom: 1px solid #1a1a2e; display: flex; justify-content: space-between; }
+  .chat-input-bar { background: #12121f; border-top: 1px solid #2a2a4a; padding: 10px 12px; display: flex; gap: 8px; align-items: center; }
+  .chat-input { flex: 1; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 20px; padding: 10px 16px; color: #e0e0e0; font-size: 0.82rem; }
+  .chat-send { background: #e94560; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1rem; color: white; }
+
+  /* SIDEBAR INFO */
+  .info-panel { max-width: 320px; flex: 1; }
+  .info-panel h2 { color: #e94560; font-size: 1.3rem; margin-bottom: 16px; }
+  .info-card { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+  .info-card h3 { font-size: 0.9rem; color: #fff; margin-bottom: 8px; }
+  .info-card p { font-size: 0.8rem; color: #888; line-height: 1.5; }
+  .screen-tag { display: inline-block; background: #e94560; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; margin-bottom: 6px; }
+  .hu-ref { font-size: 0.72rem; color: #e94560; margin-top: 6px; }
+
+  @media (max-width: 700px) {
+    .app-header { flex-direction: column; gap: 10px; }
+    .prototype-container { padding: 16px 10px; }
+    .phone-frame { width: 100%; max-width: 375px; }
+    .info-panel { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <h1>🏋️ GoTrain</h1>
+    <p>Prototipo Interactivo — TP2 · Da Vinci · Junio 2026</p>
+  </div>
+  <div class="screen-nav">
+    <button class="nav-btn active" onclick="showScreen('login')">Login</button>
+    <button class="nav-btn" onclick="showScreen('home')">Feed</button>
+    <button class="nav-btn" onclick="showScreen('workout')">Entrenamiento</button>
+    <button class="nav-btn" onclick="showScreen('profile')">Perfil</button>
+    <button class="nav-btn" onclick="showScreen('coach')">Coach IA</button>
+  </div>
+</div>
+
+<div class="prototype-container">
+
+  <!-- PHONE -->
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div style="height:14px; background:#0a0a14"></div>
+    <div class="phone-status">
+      <span>9:41</span>
+      <span>●●●●● 5G 🔋</span>
+    </div>
+
+    <!-- SCREEN: LOGIN -->
+    <div class="screen active" id="screen-login">
+      <div class="login-bg">
+        <div class="login-logo">GoTrain</div>
+        <div class="login-subtitle">Tu comunidad fitness te espera</div>
+        <input class="input-field" placeholder="✉  Email" type="text" value="santiago@example.com" readonly>
+        <input class="input-field" placeholder="🔒  Contraseña" type="password" value="••••••••" readonly>
+        <button class="btn-primary" onclick="showScreen('home')">Iniciar Sesión →</button>
+        <div class="divider"><hr><span>o continuá con</span><hr></div>
+        <button class="btn-google" onclick="showScreen('home')">🇬 Iniciar con Google</button>
+        <div class="login-footer">¿No tenés cuenta? <a href="#">Registrate gratis</a></div>
+      </div>
+    </div>
+
+    <!-- SCREEN: HOME/FEED -->
+    <div class="screen" id="screen-home">
+      <div class="s-header">
+        <div style="flex:1"><div style="font-size:1.1rem;font-weight:bold;color:#e94560">GoTrain</div><div style="font-size:0.7rem;color:#666">Buenos días, Santiago 👋</div></div>
+        <span style="font-size:1.3rem;cursor:pointer">🔔</span>
+        <div class="s-avatar">SG</div>
+      </div>
+      <div class="s-content">
+        <!-- Stories -->
+        <div class="stories-bar">
+          <div class="story-item my-story">
+            <div class="story-ring"><div class="story-inner">+</div></div>
+            <span class="story-label">Mi historia</span>
+          </div>
+          <div class="story-item"><div class="story-ring"><div class="story-inner">MR</div></div><span class="story-label">María</span></div>
+          <div class="story-item"><div class="story-ring"><div class="story-inner">JL</div></div><span class="story-label">José</span></div>
+          <div class="story-item"><div class="story-ring"><div class="story-inner">AN</div></div><span class="story-label">Ana</span></div>
+          <div class="story-item"><div class="story-ring"><div class="story-inner">TC</div></div><span class="story-label">Tomás</span></div>
+        </div>
+        <!-- Posts -->
+        <div class="post-card">
+          <div class="post-header">
+            <div class="s-avatar">MR</div>
+            <div class="post-user"><div class="name">María Rodríguez</div><div class="time">hace 23 min · 🏋️ Entrenamiento</div></div>
+            <span style="color:#555;font-size:1.1rem">···</span>
+          </div>
+          <div class="post-img">💪</div>
+          <div class="post-text">¡Nuevo récord personal en sentadilla! 80kg × 5 reps. El trabajo consistente da sus frutos 🔥</div>
+          <div class="post-workout-tag"><span class="tag-icon">📊</span><span class="tag-text">Legs Day · 1h 24min · Volumen: 4.200 kg</span></div>
+          <div class="post-actions">
+            <div class="post-action liked"><span>❤️</span> 47</div>
+            <div class="post-action"><span>💬</span> 12</div>
+            <div class="post-action"><span>↗️</span> Compartir</div>
+          </div>
+        </div>
+        <div class="post-card">
+          <div class="post-header">
+            <div class="s-avatar" style="background:linear-gradient(135deg,#27ae60,#1e8449)">JL</div>
+            <div class="post-user"><div class="name">José López</div><div class="time">hace 1h · 🏃 Running</div></div>
+          </div>
+          <div class="post-img" style="background:linear-gradient(135deg,#0f2027,#203a43,#2c5364)">🗺️</div>
+          <div class="post-text">10km en 48:32 — nuevo PR! Olavarría tiene unas vistas increíbles al amanecer 🌅</div>
+          <div class="post-actions">
+            <div class="post-action"><span>❤️</span> 23</div>
+            <div class="post-action"><span>💬</span> 5</div>
+            <div class="post-action"><span>↗️</span> Compartir</div>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="bnav-item active"><span>🏠</span>Inicio</div>
+        <div class="bnav-item" onclick="showScreen('workout')"><span>💪</span>Entrenar</div>
+        <div class="bnav-item"><span>🏆</span>Retos</div>
+        <div class="bnav-item" onclick="showScreen('coach')"><span>🤖</span>Coach</div>
+        <div class="bnav-item" onclick="showScreen('profile')"><span>👤</span>Perfil</div>
+      </div>
+    </div>
+
+    <!-- SCREEN: ENTRENAMIENTO -->
+    <div class="screen" id="screen-workout">
+      <div class="workout-hero">
+        <div class="workout-date">Martes · 17 Jun 2026</div>
+        <div class="workout-title">💪 Push Day — Pecho & Tríceps</div>
+        <div class="workout-stats">
+          <div class="w-stat"><div class="w-stat-val">6</div><div class="w-stat-label">Ejercicios</div></div>
+          <div class="w-stat"><div class="w-stat-val">18</div><div class="w-stat-label">Series</div></div>
+          <div class="w-stat"><div class="w-stat-val">~55min</div><div class="w-stat-label">Duración</div></div>
+          <div class="w-stat"><div class="w-stat-val">3.800kg</div><div class="w-stat-label">Volumen est.</div></div>
+        </div>
+      </div>
+      <div class="s-content" style="padding:12px 14px">
+        <div class="section-label">Ejercicios</div>
+        <div class="exercise-item">
+          <div class="ex-icon">🏋️</div>
+          <div class="ex-info"><div class="ex-name">Press de Banca</div><div class="ex-detail">Pecho · 4 series</div></div>
+          <div class="ex-sets">80kg × 8</div>
+        </div>
+        <div class="exercise-item">
+          <div class="ex-icon">⬆️</div>
+          <div class="ex-info"><div class="ex-name">Press Inclinado Mancuernas</div><div class="ex-detail">Pecho Superior · 3 series</div></div>
+          <div class="ex-sets">30kg × 10</div>
+        </div>
+        <div class="exercise-item">
+          <div class="ex-icon">🔽</div>
+          <div class="ex-info"><div class="ex-name">Fondos en Paralelas</div><div class="ex-detail">Tríceps / Pecho · 3 series</div></div>
+          <div class="ex-sets">Peso corp. × 12</div>
+        </div>
+        <div class="exercise-item">
+          <div class="ex-icon">💡</div>
+          <div class="ex-info"><div class="ex-name">Extensión Tríceps Polea</div><div class="ex-detail">Tríceps · 4 series</div></div>
+          <div class="ex-sets">25kg × 12</div>
+        </div>
+        <div class="add-ex-btn">+ Agregar ejercicio</div>
+        <button class="start-btn">▶ Iniciar Entrenamiento</button>
+      </div>
+      <div class="bottom-nav">
+        <div class="bnav-item" onclick="showScreen('home')"><span>🏠</span>Inicio</div>
+        <div class="bnav-item active"><span>💪</span>Entrenar</div>
+        <div class="bnav-item"><span>🏆</span>Retos</div>
+        <div class="bnav-item" onclick="showScreen('coach')"><span>🤖</span>Coach</div>
+        <div class="bnav-item" onclick="showScreen('profile')"><span>👤</span>Perfil</div>
+      </div>
+    </div>
+
+    <!-- SCREEN: PERFIL -->
+    <div class="screen" id="screen-profile">
+      <div class="s-content">
+        <div class="profile-cover">
+          <div class="profile-pic">SG</div>
+        </div>
+        <div class="profile-info">
+          <div class="profile-name">Santiago García</div>
+          <div class="profile-bio">🏋️ Atleta intermedio · Olavarría, BA · Estudiante Da Vinci</div>
+          <div class="profile-stats-row">
+            <div class="pstat"><div class="pstat-val">142</div><div class="pstat-label">Entrenamientos</div></div>
+            <div class="pstat"><div class="pstat-val">89</div><div class="pstat-label">Seguidores</div></div>
+            <div class="pstat"><div class="pstat-val">47</div><div class="pstat-label">Siguiendo</div></div>
+            <div class="pstat"><div class="pstat-val">🔥 21</div><div class="pstat-label">Racha días</div></div>
+          </div>
+          <button class="edit-profile-btn">✏️ Editar perfil</button>
+        </div>
+        <div class="badges-section">
+          <div class="section-label">Logros</div>
+          <div class="badges-grid">
+            <div class="badge-item"><div class="badge-icon">🔥</div><div class="badge-label">Racha 21 días</div></div>
+            <div class="badge-item"><div class="badge-icon">💯</div><div class="badge-label">100 entrenos</div></div>
+            <div class="badge-item"><div class="badge-icon">🏆</div><div class="badge-label">1er Reto</div></div>
+            <div class="badge-item"><div class="badge-icon">⚡</div><div class="badge-label">Nivel 12</div></div>
+            <div class="badge-item" style="opacity:0.4"><div class="badge-icon">🥇</div><div class="badge-label">Bloqueado</div></div>
+          </div>
+        </div>
+        <div class="hist-section" style="padding-bottom:12px">
+          <div class="section-label" style="margin-top:12px">Historial reciente</div>
+          <div class="hist-item"><div class="hist-left"><div class="hist-name">Push Day</div><div class="hist-date">Lun 16 Jun</div></div><div class="hist-right"><div class="hist-vol">3.800 kg</div><div class="hist-dur">52 min</div></div></div>
+          <div class="hist-item"><div class="hist-left"><div class="hist-name">Running 8km</div><div class="hist-date">Sáb 14 Jun</div></div><div class="hist-right"><div class="hist-vol">8.0 km</div><div class="hist-dur">38:45</div></div></div>
+          <div class="hist-item"><div class="hist-left"><div class="hist-name">Leg Day</div><div class="hist-date">Vie 13 Jun</div></div><div class="hist-right"><div class="hist-vol">5.200 kg</div><div class="hist-dur">1h 08min</div></div></div>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="bnav-item" onclick="showScreen('home')"><span>🏠</span>Inicio</div>
+        <div class="bnav-item" onclick="showScreen('workout')"><span>💪</span>Entrenar</div>
+        <div class="bnav-item"><span>🏆</span>Retos</div>
+        <div class="bnav-item" onclick="showScreen('coach')"><span>🤖</span>Coach</div>
+        <div class="bnav-item active"><span>👤</span>Perfil</div>
+      </div>
+    </div>
+
+    <!-- SCREEN: COACH IA -->
+    <div class="screen" id="screen-coach">
+      <div class="coach-header">
+        <div class="coach-avatar">🤖</div>
+        <div class="coach-info">
+          <div class="coach-name">Coach GoTrain AI</div>
+          <div class="coach-status">● En línea</div>
+        </div>
+      </div>
+      <div class="chat-area">
+        <div class="msg coach">
+          <div class="msg-bubble">¡Hola Santiago! 💪 Revisé tu historial de la última semana. Veo que hiciste 4 entrenamientos. ¿Querés que te arme una rutina para hoy basada en tu progreso?</div>
+          <div class="msg-time">Coach · 9:38</div>
+        </div>
+        <div class="msg user">
+          <div class="msg-bubble">Sí! Tengo unos 55 minutos, quiero trabajar pecho y tríceps</div>
+          <div class="msg-time">Vos · 9:39</div>
+        </div>
+        <div class="msg coach">
+          <div class="msg-bubble">¡Perfecto! Basándome en tu nivel intermedio y tu última sesión de pecho (80kg en press), te propongo esta rutina de 55min:
+          <div class="routine-card">
+            <div class="rc-title">🏋️ Push Day — Nivel Intermedio</div>
+            <div class="rc-item"><span>Press Banca</span><span>4×8 @ 82kg</span></div>
+            <div class="rc-item"><span>Press Inclinado</span><span>3×10 @ 32kg</span></div>
+            <div class="rc-item"><span>Aperturas Cable</span><span>3×12 @ 20kg</span></div>
+            <div class="rc-item"><span>Fondos Paralelas</span><span>3×12</span></div>
+            <div class="rc-item"><span>Extensión Tríceps</span><span>4×12 @ 27kg</span></div>
+          </div>
+          Aumenté levemente el peso en press y extensión. ¿La importamos al log? 💪</div>
+          <div class="msg-time">Coach · 9:39</div>
+        </div>
+        <div class="msg user">
+          <div class="msg-bubble">¡Sí, importala!</div>
+          <div class="msg-time">Vos · 9:40</div>
+        </div>
+        <div class="msg coach">
+          <div class="msg-bubble">✅ Rutina importada a tu log de hoy. ¡A darle! Recordá descansar entre 90s y 2min entre series pesadas. 🔥</div>
+          <div class="msg-time">Coach · 9:40</div>
+        </div>
+      </div>
+      <div class="chat-input-bar">
+        <input class="chat-input" placeholder="Preguntá al coach..." type="text">
+        <button class="chat-send">➤</button>
+      </div>
+    </div>
+
+  </div><!-- /phone-frame -->
+
+  <!-- INFO PANEL -->
+  <div class="info-panel">
+    <h2>📋 Pantallas del Prototipo</h2>
+
+    <div class="info-card">
+      <div class="screen-tag">Pantalla 1</div>
+      <h3>Login / Registro</h3>
+      <p>Acceso con email/contraseña y OAuth Google. Validaciones en tiempo real y redirección al onboarding.</p>
+      <div class="hu-ref">→ HU-01: Registro e Inicio de Sesión</div>
+    </div>
+
+    <div class="info-card">
+      <div class="screen-tag">Pantalla 2</div>
+      <h3>Feed Social</h3>
+      <p>Stories de usuarios seguidos, publicaciones con fotos, entrenamientos compartidos y sistema de likes/comentarios.</p>
+      <div class="hu-ref">→ HU-04: Feed Social · HU-05: Sistema Follow</div>
+    </div>
+
+    <div class="info-card">
+      <div class="screen-tag">Pantalla 3</div>
+      <h3>Registro de Entrenamiento</h3>
+      <p>Selección de ejercicios por grupo muscular, configuración de series/reps/peso y temporizador de sesión.</p>
+      <div class="hu-ref">→ HU-02: Registro de Entrenamiento</div>
+    </div>
+
+    <div class="info-card">
+      <div class="screen-tag">Pantalla 4</div>
+      <h3>Perfil de Usuario</h3>
+      <p>Foto, bio, estadísticas clave, racha de días, badges desbloqueados e historial de entrenamientos recientes.</p>
+      <div class="hu-ref">→ HU-03: Perfil · HU-07: Gamificación</div>
+    </div>
+
+    <div class="info-card">
+      <div class="screen-tag">Pantalla 5</div>
+      <h3>Coach Virtual IA</h3>
+      <p>Chat con IA que genera rutinas personalizadas basadas en el historial del usuario. Importación directa al log.</p>
+      <div class="hu-ref">→ HU-06: Coach Virtual con IA</div>
+    </div>
+
+    <div style="background:#1a1a2e;border:1px solid #e94560;border-radius:10px;padding:14px;margin-top:8px">
+      <h3 style="color:#e94560;font-size:0.9rem;margin-bottom:6px">🛠️ Stack Tecnológico</h3>
+      <p style="font-size:0.78rem;color:#888;line-height:1.6">
+        <strong style="color:#ccc">Frontend:</strong> React Native<br>
+        <strong style="color:#ccc">Backend:</strong> Python / Flask<br>
+        <strong style="color:#ccc">DB:</strong> PostgreSQL<br>
+        <strong style="color:#ccc">IA:</strong> Claude API (Anthropic)<br>
+        <strong style="color:#ccc">GPS:</strong> Google Maps API<br>
+        <strong style="color:#ccc">CI/CD:</strong> GitHub Actions
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  const labels = { login: 'Login', home: 'Feed', workout: 'Entrenamiento', profile: 'Perfil', coach: 'Coach IA' };
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    if (b.textContent.trim() === labels[id]) b.classList.add('active');
+  });
+}
+</script>
+</body>
+</html>
